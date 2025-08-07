@@ -1,3 +1,9 @@
+import * as dotenv from 'dotenv';
+import { ValidationPipe } from '@nestjs/common';
+
+// Load environment variables from .env file FIRST
+dotenv.config();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ZodExceptionFilter } from '@/src/utils/zod-exception.filters';
@@ -9,6 +15,8 @@ async function bootstrap() {
 
   // Handle Zod validation errors globally
   app.useGlobalFilters(new ZodExceptionFilter());
+
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   await app.listen(process.env.PORT || 3000, () => {
     const port = process.env.PORT || 3000;

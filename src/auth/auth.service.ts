@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { adminUsers } from '@/src/db/schema';
-import { type DrizzleD1Database } from 'drizzle-orm/d1';
 
 @Injectable()
 export class AuthService {
@@ -32,14 +31,20 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Create new user
-    const newUser = await this.db
+    await this.db
       .insert(adminUsers)
       .values({
+        name,
         email,
         passwordHash,
-        name,
-      })
-      .returning();
+      });
+
+    // Get the created user
+    const newUser = await this.db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.email, email))
+      .limit(1);
 
     // Generate JWT token
     const payload = { sub: newUser[0].id, email: newUser[0].email };
@@ -49,8 +54,8 @@ export class AuthService {
       message: 'User created successfully',
       user: {
         id: newUser[0].id,
-        email: newUser[0].email,
         name: newUser[0].name,
+        email: newUser[0].email,
       },
       token,
     };
@@ -92,8 +97,8 @@ export class AuthService {
       message: 'Login successful',
       user: {
         id: user.id,
-        email: user.email,
         name: user.name,
+        email: user.email,
       },
       token,
     };
@@ -118,8 +123,8 @@ export class AuthService {
 
     return {
       id: user.id,
-      email: user.email,
       name: user.name,
+      email: user.email,
     };
   }
 }
