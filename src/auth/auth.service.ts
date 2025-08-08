@@ -1,86 +1,120 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
+import { ResponseManager } from '@/src/utils/response-manager.utils';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+import { DbService } from '@/src/db/db.service';
 import { adminUsers } from '@/src/db/schema';
+import { z } from 'zod';
+import { signUpDto, signInDto } from '@/src/auth/dto/auth.dto';
+
+/** Minimal typed shape for adminUsers rows */
+interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  passwordHash: string;
+  deleted?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
+}
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    @Inject('DATABASE') private readonly db: any
+    private readonly dbService: DbService,
   ) {}
 
+  /** Map DB rows into AdminUser objects with boolean deleted */
+  private mapDbUser(row: any): AdminUser {
+    return {
+      ...row,
+      deleted: !!row.deleted,
+    };
+  }
+
   /** User sign up */
-  async signUp(body: { email: string; password: string; name: string }) {
+  async signUp(body: z.infer<typeof signUpDto>) {
     const { email, password, name } = body;
 
     // Check if user already exists
-    const existingUser = await this.db
-      .select()
-      .from(adminUsers)
-      .where(eq(adminUsers.email, email))
-      .limit(1);
+    const existing = (
+      await this.dbService.db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.email, email))
+        .limit(1)
+    ).map(this.mapDbUser);
 
-    if (existingUser.length > 0) {
+    if (existing.length > 0) {
       throw new ConflictException('User with this email already exists');
     }
 
     // Hash password
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create new user
-    await this.db
-      .insert(adminUsers)
-      .values({
-        name,
-        email,
-        passwordHash,
-      });
+    // Insert new user
+    await this.dbService.db.insert(adminUsers).values({
+      name,
+      email,
+      passwordHash,
+    });
 
-    // Get the created user
-    const newUser = await this.db
-      .select()
-      .from(adminUsers)
-      .where(eq(adminUsers.email, email))
-      .limit(1);
+    // Fetch newly created user
+    const [newUser] = (
+      await this.dbService.db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.email, email))
+        .limit(1)
+    ).map(this.mapDbUser);
 
-    // Generate JWT token
-    const payload = { sub: newUser[0].id, email: newUser[0].email };
-    const token = this.jwtService.sign(payload);
-
-    return {
-      message: 'User created successfully',
-      user: {
-        id: newUser[0].id,
-        name: newUser[0].name,
-        email: newUser[0].email,
-      },
-      token,
-    };
-  }
-
-  /** User login*/
-  async signIn(body: { email: string; password: string }) {
-    const { email, password } = body;
-
-    // Find user by email
-    const users = await this.db
-      .select()
-      .from(adminUsers)
-      .where(eq(adminUsers.email, email))
-      .limit(1);
-
-    if (users.length === 0) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!newUser) {
+      throw new ConflictException('Failed to create user');
     }
 
-    const user = users[0];
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      sub: newUser.id,
+      email: newUser.email,
+    });
 
-    // Check if user is deleted
-    if (user.deleted) {
-      throw new UnauthorizedException('Account has been deleted');
+    return ResponseManager.standardResponse(
+      'success',
+      201,
+      'User created successfully',
+      {
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+        },
+        token,
+      },
+    );
+  }
+
+  /** User login */
+  async signIn(body: z.infer<typeof signInDto>) {
+    const { email, password } = body;
+
+    // Find user
+    const [user] = (
+      await this.dbService.db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.email, email))
+        .limit(1)
+    ).map(this.mapDbUser);
+
+    if (!user || user.deleted) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Verify password
@@ -90,34 +124,37 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email };
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+    });
 
-    return {
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Login successful',
+      {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+        token,
       },
-      token,
-    };
+    );
   }
 
+  /** Validate user by ID (internal use for guards) */
   async validateUser(userId: number) {
-    const users = await this.db
-      .select()
-      .from(adminUsers)
-      .where(eq(adminUsers.id, userId))
-      .limit(1);
+    const [user] = (
+      await this.dbService.db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.id, userId))
+        .limit(1)
+    ).map(this.mapDbUser);
 
-    if (users.length === 0) {
-      return null;
-    }
-
-    const user = users[0];
-
-    if (user.deleted) {
+    if (!user || user.deleted) {
       return null;
     }
 

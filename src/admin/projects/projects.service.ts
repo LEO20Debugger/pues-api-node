@@ -1,89 +1,124 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq, and, desc } from 'drizzle-orm';
 import { projects } from '../../db/schema';
+import { DbService } from '@/src/db/db.service';
+import { ResponseManager } from '@/src/utils/response-manager.utils';
 
 @Injectable()
 export class ProjectsService {
-  constructor(@Inject('DATABASE') private readonly db: any) {}
+  constructor(private readonly dbService: DbService) {}
 
-  async getAllProjects() {
-    return await this.db
+  /**
+   * Retrieve all projects that are not deleted, ordered by last update.
+   */
+  public async getAllProjects() {
+    /** set table alias */
+    const p = projects;
+
+    const result = await this.dbService.db
       .select()
-      .from(projects)
-      .where(eq(projects.deleted, 0))
-      .orderBy(desc(projects.updatedat));
+      .from(p)
+      .where(eq(p.deleted, 0))
+      .orderBy(desc(p.updatedat));
+
+    // Wrap response in a consistent API format
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Projects fetched successfully',
+      result,
+    );
   }
 
-  async getProject(id: number) {
-    const projectList = await this.db
+  /**
+   * Retrieve a single project by ID, throws if not found.
+   */
+  public async getProject(id: number) {
+    /** set table alias */
+    const p = projects;
+
+    const [project] = await this.dbService.db
       .select()
-      .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.deleted, 0)))
+      .from(p)
+      .where(and(eq(p.id, id), eq(p.deleted, 0)))
       .limit(1);
 
-    if (projectList.length === 0) {
+    if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    return projectList[0];
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Project fetched successfully',
+      project,
+    );
   }
 
-  async createProject(data: {
+  /**
+   * Create a new project record and return the created entry.
+   */
+  public async createProject(data: {
     title: string;
     description: string;
     imageUrl?: string;
     completedAt?: string;
   }) {
-    await this.db.insert(projects).values({
+    /** set table alias */
+    const p = projects;
+
+    // Insert the project
+    await this.dbService.db.insert(p).values({
       title: data.title,
       description: data.description,
       imageUrl: data.imageUrl,
       completedAt: data.completedAt,
     });
 
-    // Get the created project
-    const newProject = await this.db
+    const [newProject] = await this.dbService.db
       .select()
-      .from(projects)
-      .where(eq(projects.title, data.title))
-      .orderBy(desc(projects.updatedat))
+      .from(p)
+      .where(eq(p.title, data.title))
+      .orderBy(desc(p.updatedat))
       .limit(1);
 
-    return newProject[0];
+    return ResponseManager.standardResponse(
+      'success',
+      201,
+      'Project created successfully',
+      newProject,
+    );
   }
 
-  async updateProject(
+  public async updateProject(
     id: number,
-    data: {
-      title?: string;
-      description?: string;
-      imageUrl?: string;
-      completedAt?: string;
-    },
+    projectData: Partial<typeof projects.$inferInsert>, // allows partial updates
   ) {
-    const updateData: any = {};
+    // Ensure project exists before updating
+    await this.getProject(id);
 
-    if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined)
-      updateData.description = data.description;
-    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
-    if (data.completedAt !== undefined)
-      updateData.completedAt = data.completedAt;
-
-    const result = await this.db
+    // Perform update
+    await this.dbService.db
       .update(projects)
-      .set(updateData)
+      .set(projectData)
       .where(eq(projects.id, id));
 
-    if (result.affectedRows === 0) {
-      throw new NotFoundException('Project not found');
-    }
+    // Retrieve the updated project for response
+    const updatedProject = await this.getProject(id);
 
-    return await this.getProject(id);
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Project updated successfully',
+      updatedProject.data,
+    );
   }
 
-  async deleteProject(id: number) {
-    const result = await this.db
+  public async deleteProject(id: number) {
+    // Ensure project exists before deletion
+    await this.getProject(id);
+
+    await this.dbService.db
       .update(projects)
       .set({
         deleted: 1,
@@ -91,8 +126,11 @@ export class ProjectsService {
       })
       .where(eq(projects.id, id));
 
-    if (result.affectedRows === 0) {
-      throw new NotFoundException('Project not found');
-    }
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Project deleted successfully',
+      null,
+    );
   }
 }

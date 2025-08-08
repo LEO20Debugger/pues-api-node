@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
-import { DatabaseModule } from './db/database.module';
+import { DatabaseModule } from './db/db.module';
 
 @Module({
   imports: [DatabaseModule, AuthModule, AdminModule],
