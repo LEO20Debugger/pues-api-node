@@ -26,7 +26,7 @@ export class DbService implements OnModuleInit {
     });
 
     this.db = drizzle(connection, { schema, mode: 'default' });
-    console.log('✅ Database connection established');
+    console.log('🚀 Database connection established');
   }
 }
 
