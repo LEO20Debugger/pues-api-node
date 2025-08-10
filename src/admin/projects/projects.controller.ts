@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -15,9 +13,12 @@ import {
   createProjectDto,
   updateProjectDto,
 } from '@/src/admin/projects/dto/projectDto';
+import { AdminGuard } from '@/src/auth/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 
-@Controller('projects')
+@Controller('admin/projects')
+@UseGuards(AdminGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
@@ -49,8 +50,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteProject(@Param('id') id: number) {
+  public async deleteProject(@Param('id') id: number) {
     return this.projectsService.deleteProject(Number(id));
   }
 }

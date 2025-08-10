@@ -1,86 +1,108 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq, and, desc } from 'drizzle-orm';
 import { contacts } from '../../db/schema';
+import { DbService } from '@/src/db/db.service';
+import { ResponseManager } from '@/src/utils/response-manager.utils';
+
+type ContactInsert = Partial<typeof contacts.$inferInsert>;
 
 @Injectable()
 export class ContactsService {
-  constructor(@Inject('DATABASE') private readonly db: any) {}
+  constructor(private readonly dbService: DbService) {}
 
-  async getAllContacts() {
-    return await this.db
+  public async getAllContacts() {
+    /**set table alias */
+    const c = contacts;
+
+    const result = await this.dbService.db
       .select()
-      .from(contacts)
-      .where(eq(contacts.deleted, 0))
-      .orderBy(desc(contacts.createdat));
+      .from(c)
+      .where(eq(c.deleted, 0))
+      .orderBy(desc(c.createdat));
+
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Contacts fetched successfully',
+      result,
+    );
   }
 
-  async getContact(id: number) {
-    const contactList = await this.db
+  public async getContact(id: number) {
+    /**set table alias */
+    const c = contacts;
+
+    const [contact] = await this.dbService.db
       .select()
-      .from(contacts)
-      .where(and(eq(contacts.id, id), eq(contacts.deleted, 0)))
+      .from(c)
+      .where(and(eq(c.id, id), eq(c.deleted, 0)))
       .limit(1);
 
-    if (contactList.length === 0) {
+    if (!contact) {
       throw new NotFoundException('Contact not found');
     }
 
-    return contactList[0];
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Contact fetched successfully',
+      contact,
+    );
   }
 
-  async createContact(data: {
+  public async createContact(data: {
     name: string;
     email: string;
     phone?: string;
     message: string;
   }) {
-    await this.db
-      .insert(contacts)
-      .values({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        message: data.message,
-      });
+    /**set table alias */
+    const c = contacts;
 
-    // Get the created contact
-    const newContact = await this.db
+    await this.dbService.db.insert(c).values(data);
+
+    const [newContact] = await this.dbService.db
       .select()
-      .from(contacts)
-      .where(eq(contacts.email, data.email))
-      .orderBy(desc(contacts.createdat))
+      .from(c)
+      .where(eq(c.email, data.email))
+      .orderBy(desc(c.createdat))
       .limit(1);
 
-    return newContact[0];
+    return ResponseManager.standardResponse(
+      'success',
+      201,
+      'Contact created successfully',
+      newContact,
+    );
   }
 
-  async updateContact(id: number, data: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    message?: string;
-  }) {
-    const updateData: any = {};
-    
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.email !== undefined) updateData.email = data.email;
-    if (data.phone !== undefined) updateData.phone = data.phone;
-    if (data.message !== undefined) updateData.message = data.message;
+  public async updateContact(id: number, contactData: ContactInsert) {
+    /**set table alias */
+    const c = contacts;
 
-    const result = await this.db
-      .update(contacts)
-      .set(updateData)
-      .where(eq(contacts.id, id));
+    // Ensure the contact exists
+    await this.ensureExists(id);
 
-    if (result.affectedRows === 0) {
-      throw new NotFoundException('Contact not found');
-    }
+    await this.dbService.db.update(c).set(contactData).where(eq(c.id, id));
 
-    return await this.getContact(id);
+    const [updatedContact] = await this.dbService.db
+      .select()
+      .from(c)
+      .where(eq(c.id, id))
+      .limit(1);
+
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Contact updated successfully',
+      updatedContact,
+    );
   }
 
-  async deleteContact(id: number) {
-    const result = await this.db
+  public async deleteContact(id: number) {
+    await this.ensureExists(id);
+
+    await this.dbService.db
       .update(contacts)
       .set({
         deleted: 1,
@@ -88,7 +110,23 @@ export class ContactsService {
       })
       .where(eq(contacts.id, id));
 
-    if (result.affectedRows === 0) {
+    return ResponseManager.standardResponse(
+      'success',
+      200,
+      'Contact deleted successfully',
+      null,
+    );
+  }
+
+  /** Private helper to check existence without wrapping in a response */
+  private async ensureExists(id: number) {
+    const [contact] = await this.dbService.db
+      .select()
+      .from(contacts)
+      .where(and(eq(contacts.id, id), eq(contacts.deleted, 0)))
+      .limit(1);
+
+    if (!contact) {
       throw new NotFoundException('Contact not found');
     }
   }
