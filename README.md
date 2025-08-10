@@ -21,78 +21,259 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+# 🏗️ Construction Company Admin Dashboard API
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A robust NestJS backend API for managing a construction company's admin dashboard. Built with TypeScript, featuring secure authentication, contact management, and project portfolio management.
 
-## Project setup
+## ✨ Features
 
-```bash
-$ npm install
+- **🔐 Secure Authentication**: JWT-based authentication with bcrypt password hashing
+- **📞 Contact Management**: Store and manage customer inquiries and contact information
+- **🏢 Project Portfolio**: Upload and manage construction projects with images and descriptions
+- **📊 Dashboard Analytics**: Get overview statistics and recent activities
+- **🛡️ Protected Routes**: All admin endpoints require authentication
+- **✅ Input Validation**: Comprehensive validation using Zod schemas
+- **🗄️ Database**: MySQL with Drizzle ORM for type-safe database operations
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- MySQL database
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd pues-api-node
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL=mysql://username:password@localhost:3306/pues_api
+   JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
+   PORT=3000
+   NODE_ENV=development
+   ```
+
+4. **Set up the database**
+   ```bash
+   # Generate migrations
+   npm run db:generate
+   
+   # Run migrations
+   npm run db:migrate
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run start:dev
+   ```
+
+The API will be available at `http://localhost:3000`
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+
+#### Create Admin Account
+```http
+POST /auth/signup
+Content-Type: application/json
+
+{
+  "email": "admin@construction.com",
+  "password": "securepassword123",
+  "name": "Admin User"
+}
 ```
 
-## Compile and run the project
+#### Sign In
+```http
+POST /auth/signin
+Content-Type: application/json
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+{
+  "email": "admin@construction.com",
+  "password": "securepassword123"
+}
 ```
 
-## Run tests
+### Protected Admin Endpoints
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+All admin endpoints require a JWT token in the Authorization header:
+```
+Authorization: Bearer <your_jwt_token>
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+#### Profile Management
+```http
+GET /admin/profile
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### Contact Management
+```http
+GET /admin/contacts          # List all contacts
+GET /admin/contacts/:id      # Get specific contact
+DELETE /admin/contacts/:id   # Delete contact
+```
 
-## Resources
+#### Project Management
+```http
+GET /admin/projects          # List all projects
+GET /admin/projects/:id      # Get specific project
+POST /admin/projects         # Create new project
+PUT /admin/projects/:id      # Update project
+DELETE /admin/projects/:id   # Delete project
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+#### Dashboard Analytics
+```http
+GET /admin/dashboard/stats   # Get dashboard statistics
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Example: Creating a Project
+```http
+POST /admin/projects
+Authorization: Bearer <token>
+Content-Type: application/json
 
-## Support
+{
+  "title": "Modern Office Building",
+  "description": "A state-of-the-art office complex with sustainable design",
+  "imageUrl": "https://example.com/project-image.jpg",
+  "completedAt": "2024-01-15T00:00:00.000Z"
+}
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🛠️ Development
 
-## Stay in touch
+### Available Scripts
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+# Development
+npm run start:dev          # Start in watch mode
+npm run start:debug        # Start with debug
 
-## License
+# Production
+npm run build              # Build the application
+npm run start:prod         # Start production server
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Database
+npm run db:generate        # Generate database migrations
+npm run db:migrate         # Run database migrations
+npm run db:studio          # Open Drizzle Studio
+
+# Testing
+npm run test               # Run unit tests
+npm run test:e2e           # Run end-to-end tests
+npm run test:cov           # Run tests with coverage
+
+# Code Quality
+npm run lint               # Run ESLint
+npm run format             # Format code with Prettier
+```
+
+### Project Structure
+
+```
+src/
+├── auth/                  # Authentication module
+│   ├── auth.controller.ts # Auth endpoints
+│   ├── auth.service.ts    # Auth business logic
+│   ├── jwt.strategy.ts    # JWT authentication
+│   └── auth.module.ts     # Auth module config
+├── admin/                 # Admin dashboard module
+│   ├── admin.controller.ts # Admin endpoints
+│   ├── admin.service.ts    # Admin business logic
+│   └── admin.module.ts     # Admin module config
+├── db/                    # Database configuration
+│   ├── index.ts           # Database connection
+│   ├── schema.ts          # Database schema
+│   └── database.module.ts # Database module
+└── utils/                 # Utility functions
+    ├── zod-validation.pipe.ts
+    └── zod-exception.filters.ts
+```
+
+## 🔒 Security Features
+
+- **Password Hashing**: bcrypt with 12 salt rounds
+- **JWT Tokens**: 24-hour expiration for admin sessions
+- **Input Validation**: Zod schemas for all inputs
+- **Protected Routes**: Authentication required for admin endpoints
+- **Soft Deletes**: Safe deletion (marked as deleted, not removed)
+- **Error Handling**: Proper error responses for invalid requests
+
+## 🗄️ Database Schema
+
+### Admin Users
+- `id`: Primary key
+- `email`: Unique email address
+- `passwordHash`: Hashed password
+- `name`: Admin user name
+- `createdAt`, `updatedAt`: Timestamps
+- `deleted`, `deletedAt`: Soft delete fields
+
+### Projects
+- `id`: Primary key
+- `title`: Project title
+- `description`: Project description
+- `imageUrl`: Project image URL
+- `completedAt`: Completion date
+- `updatedAt`: Last update timestamp
+- `deleted`, `deletedAt`: Soft delete fields
+
+### Contacts
+- `id`: Primary key
+- `name`: Contact name
+- `email`: Contact email
+- `phone`: Contact phone (optional)
+- `message`: Contact message
+- `createdAt`: Contact creation timestamp
+- `updatedAt`: Last update timestamp
+- `deleted`, `deletedAt`: Soft delete fields
+
+## 🚀 Deployment
+
+### Environment Variables for Production
+
+```env
+DATABASE_URL=mysql://user:password@host:port/database
+JWT_SECRET=your_production_jwt_secret
+NODE_ENV=production
+PORT=3000
+```
+
+### Database Migration
+
+```bash
+npm run db:migrate
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the [AUTH_SETUP.md](AUTH_SETUP.md) for detailed setup instructions
