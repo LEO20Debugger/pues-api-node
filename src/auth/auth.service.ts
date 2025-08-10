@@ -12,18 +12,6 @@ import { adminUsers } from '@/src/db/schema';
 import { z } from 'zod';
 import { signUpDto, signInDto } from '@/src/auth/dto/auth.dto';
 
-/** Minimal typed shape for adminUsers rows */
-interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  passwordHash: string;
-  deleted?: boolean;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  deletedAt?: string | null;
-}
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,26 +19,16 @@ export class AuthService {
     private readonly dbService: DbService,
   ) {}
 
-  /** Map DB rows into AdminUser objects with boolean deleted */
-  private mapDbUser(row: any): AdminUser {
-    return {
-      ...row,
-      deleted: !!row.deleted,
-    };
-  }
-
   /** User sign up */
-  async signUp(body: z.infer<typeof signUpDto>) {
+  public async signUp(body: z.infer<typeof signUpDto>) {
     const { email, password, name } = body;
 
     // Check if user already exists
-    const existing = (
-      await this.dbService.db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.email, email))
-        .limit(1)
-    ).map(this.mapDbUser);
+    const existing = await this.dbService.db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.email, email))
+      .limit(1);
 
     if (existing.length > 0) {
       throw new ConflictException('User with this email already exists');
@@ -67,13 +45,11 @@ export class AuthService {
     });
 
     // Fetch newly created user
-    const [newUser] = (
-      await this.dbService.db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.email, email))
-        .limit(1)
-    ).map(this.mapDbUser);
+    const [newUser] = await this.dbService.db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.email, email))
+      .limit(1);
 
     if (!newUser) {
       throw new ConflictException('Failed to create user');
@@ -101,17 +77,15 @@ export class AuthService {
   }
 
   /** User login */
-  async signIn(body: z.infer<typeof signInDto>) {
+  public async signIn(body: z.infer<typeof signInDto>) {
     const { email, password } = body;
 
     // Find user
-    const [user] = (
-      await this.dbService.db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.email, email))
-        .limit(1)
-    ).map(this.mapDbUser);
+    const [user] = await this.dbService.db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.email, email))
+      .limit(1);
 
     if (!user || user.deleted) {
       throw new UnauthorizedException('Invalid credentials');
@@ -145,14 +119,12 @@ export class AuthService {
   }
 
   /** Validate user by ID (internal use for guards) */
-  async validateUser(userId: number) {
-    const [user] = (
-      await this.dbService.db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.id, userId))
-        .limit(1)
-    ).map(this.mapDbUser);
+  public async validateUser(userId: number) {
+    const [user] = await this.dbService.db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.id, userId))
+      .limit(1);
 
     if (!user || user.deleted) {
       return null;
