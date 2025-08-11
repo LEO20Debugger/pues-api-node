@@ -14,7 +14,7 @@ import { AdminGuard } from '@/src/auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { createContactDto, updateContactDto } from './dto/contactDto';
 
-@Controller('admin/contacts')
+@Controller('v1/admin/contacts')
 @UseGuards(AdminGuard)
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}

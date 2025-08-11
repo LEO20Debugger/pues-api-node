@@ -4,7 +4,7 @@ import { signUpDto, signInDto } from '@/src/auth/dto/auth.dto';
 import { ZodValidationPipe } from '@/src/utils/zod-validation.pipe';
 import { z } from 'zod';
 
-@Controller('auth')
+@Controller('v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

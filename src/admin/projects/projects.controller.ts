@@ -17,7 +17,7 @@ import { AdminGuard } from '@/src/auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 
-@Controller('admin/projects')
+@Controller('v1/admin/projects')
 @UseGuards(AdminGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -46,7 +46,7 @@ export class ProjectsController {
     @Body(new ZodValidationPipe(updateProjectDto))
     body: z.infer<typeof updateProjectDto>,
   ) {
-    return this.projectsService.updateProject(Number(id), body);
+    return this.projectsService.updateProject(body, Number(id));
   }
 
   @Delete(':id')
