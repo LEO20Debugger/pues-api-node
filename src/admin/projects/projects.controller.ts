@@ -46,7 +46,7 @@ export class ProjectsController {
     @Body(new ZodValidationPipe(updateProjectDto))
     body: z.infer<typeof updateProjectDto>,
   ) {
-    return this.projectsService.updateProject(Number(id), body);
+    return this.projectsService.updateProject(body, Number(id));
   }
 
   @Delete(':id')
