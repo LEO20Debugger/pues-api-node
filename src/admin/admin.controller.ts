@@ -3,7 +3,7 @@ import { CurrentUser } from '@/src/auth/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ResponseManager } from '@/src/utils/response-manager.utils';
 
-@Controller('admin')
+@Controller('v1/admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
