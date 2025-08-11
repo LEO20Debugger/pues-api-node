@@ -275,5 +275,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 For support and questions:
-- Create an issue in the repository
-- Check the [AUTH_SETUP.md](AUTH_SETUP.md) for detailed setup instructions
+- Create an issue in the repository.
+- Check the [AUTH_SETUP.md](AUTH_SETUP.md) for detailed setup instructions.

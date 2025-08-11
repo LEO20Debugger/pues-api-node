@@ -17,7 +17,7 @@ import { AdminGuard } from '@/src/auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 
-@Controller('admin/projects')
+@Controller('v1/admin/projects')
 @UseGuards(AdminGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
