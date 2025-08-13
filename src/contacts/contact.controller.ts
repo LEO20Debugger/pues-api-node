@@ -9,15 +9,15 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from '@/src/utils/zod-validation.pipe';
-import { ContactsService } from '@/src/admin/contacts/contacts.service';
+import { ContactService } from '@/src/contacts/contact.service';
 import { AdminGuard } from '@/src/auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { createContactDto, updateContactDto } from './dto/contactDto';
 
 @Controller('v1/admin/contacts')
 @UseGuards(AdminGuard)
-export class ContactsController {
-  constructor(private readonly contactsService: ContactsService) {}
+export class ContactController {
+  constructor(private readonly contactsService: ContactService) {}
 
   @Get()
   getAllContacts() {
